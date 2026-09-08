@@ -12,14 +12,21 @@ export const registerUser = async (req, res) => {
 
       const existingUser = await User.findOne({email});
       if(existingUser){
-         return res.status(400).json({message: "Email already registered"});
+         return res.status(409).json({message: "Email already registered"});
       }
+
       const hashed = await bcrypt.hash(password,10);
 
-      const user = new User({name,email,mobile,password:hashed});
-      await user.save();
+      //const user = new User({name,email,mobile,password:hashed});
+      const user = await User.create({name,email,mobile,password:hashed});
 
-      res.status(201).json({message:"User Registration Successfully"});
+      const token = jwt.sign({id:user._id},process.env.JWT_SECRET,{expiresIn:'1d'});
+      
+      //await user.save();
+
+      res.status(201).json({message:"User Registration Successfully",
+         user: { id: user._id, name: user.name, email: user.email, mobile: user.mobile }, 
+         token });
    }
    catch(error){
      console.log(error);
@@ -46,12 +53,12 @@ export const loginUser = async(req,res) =>{
 
       const token = jwt.sign({userID:user._id},process.env.JWT_SECRET,{expiresIn:'1d'});
       // console.log(token);
-      res.cookie("token",token,{
-         httpOnly: true,
-         secure: process.env.NODE_ENV === "production",
-         sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-         maxAge:1 * 24 * 60 * 60 * 1000,
-      })
+      // res.cookie("token",token,{
+      //    httpOnly: true,
+      //    secure: process.env.NODE_ENV === "production",
+      //    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      //    maxAge:1 * 24 * 60 * 60 * 1000,
+      // })
       res.status(200).json({
          message:'Login Successfull',
          token
@@ -62,38 +69,70 @@ export const loginUser = async(req,res) =>{
    }
 }
 
-export const getUserDetails = async(req, res) => {
-   try{
-      console.log("Cookies:", req.cookies);
-      const token = req.cookies.token;
-      if(!token){
-         return res.status(401).json({message: "Token missing"});
+// export const getUserDetails = async(req, res) => {
+//    try{
+//       console.log("Cookies:", req.cookies);
+//       const token = req.cookies.token;
+//       if(!token){
+//          return res.status(401).json({message: "Token missing"});
+//       }
+//       const decoded = jwt.verify(token,process.env.JWT_SECRET);
+//       console.log(decoded);
+//       // const user=await User.findOne({ _id: decoded.userID });
+//       const user = await User.findById(decoded.userID).select("-password");
+//       if(!user){
+//          return res.status(404).json({message:"User Not Found"});
+//       }
+//       res.status(200).json({
+//          success: true,
+//          user
+//       });
+//    }
+//    catch(error){
+//       res.status(500).json({message:"Server error",error});
+//    }
+// }
+
+export const getUserDetails = async (req, res) => {
+   try {
+      const authHeader = req.headers.authorization;
+      console.log("Authorization Header:", authHeader);
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+         return res.status(401).json({ message: "Token missing" });
       }
-      const decoded = jwt.verify(token,process.env.JWT_SECRET);
-      console.log(decoded);
-      // const user=await User.findOne({ _id: decoded.userID });
+
+      const token = authHeader.split(" ")[1];
+
+      let decoded;
+      try {
+         decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+         return res.status(401).json({ message: "Invalid or expired token" });
+      }
+
       const user = await User.findById(decoded.userID).select("-password");
-      if(!user){
-         return res.status(404).json({message:"User Not Found"});
+
+      if (!user) {
+         return res.status(404).json({ message: "User Not Found" });
       }
+
       res.status(200).json({
          success: true,
          user
       });
-   }
-   catch(error){
-      res.status(500).json({message:"Server error",error});
+   } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
    }
 }
 
 export const logout = async(req, res) => {
    try{
-      res.cookie("token", "", {
-         httpOnly: true,
-         secure: process.env.NODE_ENV === "production",
-         sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-         expires: new Date(0),
-      });
+      // res.cookie("token", "", {
+      //    httpOnly: true,
+      //    secure: process.env.NODE_ENV === "production",
+      //    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      //    expires: new Date(0),
+      // });
       res.status(200).json({success: true, 
          message: "Logout Successfull"
       });

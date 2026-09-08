@@ -7,7 +7,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 import authRoute from './routes/UserRoutes.js';
-import cookieParser from 'cookie-parser';
+// import cookieParser from 'cookie-parser';
 
 // app.use(cors(
 //     {
@@ -19,27 +19,24 @@ import cookieParser from 'cookie-parser';
 const allowedOrigins = [
   "http://127.0.0.1:5173",
   "http://localhost:5173",
-  // "https://login-jwt-authentication-nodejs.onrender.com"
+  "https://login-jwt-authentication-react.vercel.app"
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS not allowed"));
-    }
-  },
-  credentials: true
-}));
+  // origin: function (origin, callback) {
+  //   if (!origin || allowedOrigins.includes(origin)) {
+  //     callback(null, true);
+  //   } else {
+  //     callback(new Error("CORS not allowed"));
+  //   }
+  // }  
 
-app.options("*", cors({
   origin: allowedOrigins,
-  credentials: true
+    credentials: true
 }));
 
 app.use(express.json());
-app.use(cookieParser());
+// app.use(cookieParser());
 app.use("/api/auth", authRoute);
 
 app.listen(PORT, async () => {
