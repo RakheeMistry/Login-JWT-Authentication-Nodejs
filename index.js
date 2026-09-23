@@ -7,8 +7,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 import authRoute from './routes/UserRoutes.js';
-// import cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 
+app.use(cookieParser());
 // app.use(cors(
 //     {
 //         origin: ["http://127.0.0.1:5173", "http://localhost:5173"],
